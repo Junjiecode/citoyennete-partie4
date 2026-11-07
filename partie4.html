@@ -644,7 +644,7 @@ function renderContent(searchQ){
         el.className = 'block' + (searchQ && !r.text.toLowerCase().includes(searchQ.toLowerCase()) ? ' dim' : '');
         el.dataset.anchor = anchor;
         el.innerHTML = r.html + '<button class="addnote'+(hasNote?' has':'')+'" data-anchor="'+anchor+'">＋笔记</button>';
-        BLOCK_MAP[anchor] = b;
+        BLOCK_MAP[anchor] = { t: b.t, text: r.text };
         subDiv.appendChild(el);
         if (searchQ && r.text.toLowerCase().includes(searchQ.toLowerCase())) totalMatches++;
       });
@@ -867,7 +867,7 @@ const AI_PRESETS = {
   deepseek:  { base:'https://api.deepseek.com/v1', model:'deepseek-chat' },
   openrouter:{ base:'https://openrouter.ai/api/v1', model:'qwen/qwen-2.5-7b-instruct' }
 };
-let aiCfg = { base: AI_PRESETS.ollama.base, model: AI_PRESETS.ollama.model, key: '' };
+let aiCfg = { base: AI_PRESETS.deepseek.base, model: AI_PRESETS.deepseek.model, key: '' };
 try { Object.assign(aiCfg, JSON.parse(localStorage.getItem(AI_KEY) || '{}')); } catch(e){}
 function saveAICfg(){ localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }
 
@@ -887,6 +887,7 @@ function visibleAnchor(){
 }
 /* 中文提问 → 法语关键词，否则检索完全落空 */
 const ZH2FR = {
+  '第一':'premier|première','第二':'second|seconde|deuxième','第三':'troisième','第四':'quatrième','第五':'cinquième','第六':'sixième',
   '帝国':'empire','革命':'révolution','战争':'guerre','国王':'roi','国王':'roi','王':'roi','共和国':'république',
   '王朝':'dynastie','宗教':'religion','教会':'église','政教分离':'laïcité','世俗':'laïcité','奴隶':'esclavage',
   '殖民地':'colonisation','阿尔及利亚':'algérie','欧盟':'union européenne','欧洲':'europe','人口':'population',
@@ -899,14 +900,17 @@ const ZH2FR = {
   '启蒙':'lumières','文艺复兴':'renaissance','五月':'mai 1968','移民':'immigration','学校':'école',
   '医疗':'santé','社保':'sécurité sociale','税':'impôt','军队':'armée','国防':'défense','言论':'presse',
   '协会':'association','工会':'syndicat','罢工':'grève','女权':'femmes','教育':'éducation','大学':'université',
-  '科学':'science','居里':'curie','巴斯德':'pasteur','雨果':'hugo','莫里哀':'molière','伏尔泰':'voltaire'
+  '科学':'science','居里':'curie','巴斯德':'pasteur','雨果':'hugo','莫里哀':'molière','伏尔泰':'voltaire',
+  '普法':'prusse|prussien','人口':'population|démograph','山脉':'montagne|alpes|pyrénées','河流':'fleuve|rivière',
+  '森林':'forêt','工业':'industrie|industriel','铁路':'chemin de fer|ferroviaire','殖民':'colonisation|colonial'
 };
-function queryTerms(q){
-  const set = new Set((q.toLowerCase().match(/[a-zà-öø-ÿ0-9]{3,}/g) || []).filter(w => !STOP.has(w)));
-  Object.keys(ZH2FR).forEach(k => {
-    if (q.indexOf(k) >= 0) ZH2FR[k].split('|').forEach(w => set.add(w));
-  });
-  return [...set];
+/* 把问题拆成「概念」：中文词 → 法语同义形式；拉丁词直接当概念 */
+function queryKeys(q){
+  const keys = [];
+  Object.keys(ZH2FR).forEach(k => { if (q.indexOf(k) >= 0) keys.push(ZH2FR[k].split('|')); });
+  const latin = (q.toLowerCase().match(/[a-zà-öø-ÿ0-9]{3,}/g) || []).filter(w => !STOP.has(w));
+  latin.forEach(w => keys.push([w]));
+  return keys;
 }
 function fullText(){
   const parts = [];
@@ -922,37 +926,49 @@ function fullText(){
   });
   return parts.join('\n');
 }
+/* 命中几个概念 + 命中位置是否聚集（span 小说明这些词在同一句里） */
+function scoreBlock(a, keys){
+  const b = BLOCK_MAP[a];
+  const t = (b.text || '').toLowerCase();
+  const factor = b.t === 'timeline' ? 0.4 : 1;
+  let hit = 0;
+  const pos = [];
+  keys.forEach(forms => {
+    let best = -1;
+    forms.forEach(f => { const i = t.indexOf(f); if (i >= 0 && (best < 0 || i < best)) best = i; });
+    if (best >= 0) { hit++; pos.push(best); }
+  });
+  if (!hit) return 0;
+  const span = Math.max.apply(null, pos) - Math.min.apply(null, pos);
+  return factor * (hit * 10 + 8 / (1 + span / 60));
+}
 function bestAnchorFor(q){
-  const terms = queryTerms(q);
+  const keys = queryKeys(q);
   let best = null, bs = 0;
   Object.keys(BLOCK_MAP).forEach(a => {
-    const t = (BLOCK_MAP[a].text || '').toLowerCase();
-    let s = 0;
-    terms.forEach(w => { let i = t.indexOf(w); while (i >= 0) { s++; i = t.indexOf(w, i + w.length); } });
+    const s = scoreBlock(a, keys);
     if (s > bs) { bs = s; best = a; }
   });
   return best || visibleAnchor();
 }
 function buildContext(q){
-  const terms = queryTerms(q);
-  const keys = Object.keys(BLOCK_MAP);
+  const keys = queryKeys(q);
   let picks = [];
-  if (terms.length) {
-    picks = keys.map(a => {
-      const t = (BLOCK_MAP[a].text || '').toLowerCase();
-      let s = 0;
-      terms.forEach(w => { let i = t.indexOf(w); while (i >= 0) { s++; i = t.indexOf(w, i + w.length); } });
-      return { a: a, s: s };
-    }).filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 10);
+  if (keys.length) {
+    picks = Object.keys(BLOCK_MAP)
+      .map(a => ({ a: a, s: scoreBlock(a, keys) }))
+      .filter(x => x.s > 0)
+      .sort((x, y) => y.s - x.s)
+      .slice(0, 10);
   }
   if (picks.length >= 2) {
     const ctx = picks.map(x => '〔' + anchorLabel(x.a) + '〕' + BLOCK_MAP[x.a].text).join('\n---\n');
     return '【全书结构】\n' + outlineText() + '\n\n【相关原文】\n' + ctx;
   }
-  /* 检索不到就直接给全文（Partie 4 约 3.4 万字符，本地模型足以吃下） */
-  const all = fullText();
-  return '【全书结构】\n' + outlineText() + '\n\n【全文】\n' + all;
+  /* 检索不到就直接给全文（Partie 4 约 3.4 万字符，本地模型吃得下） */
+  return '【全书结构】\n' + outlineText() + '\n\n【全文】\n' + fullText();
 }
+
 let lastCtxAnchor = null;
 
 function renderChat(){
@@ -1100,7 +1116,7 @@ function ensureAIModal(){
     +     '<button data-p="ollama">本地 Ollama</button><button data-p="lmstudio">LM Studio</button>'
     +     '<button data-p="deepseek">DeepSeek</button><button data-p="openrouter">OpenRouter</button>'
     +   '</div>'
-    +   '<div class="mhint">本地模型：先用 <code>ollama serve</code> 启动，并设置 <code>OLLAMA_ORIGINS=*</code> 才能从网页调用。</div>'
+    +   '<div class="mhint">DeepSeek：地址 <code>https://api.deepseek.com/v1</code>，模型 <code>deepseek-chat</code>，Key 只存在这台设备的浏览器里，不会写进网页或仓库。<br>本地 Ollama：需先 <code>ollama serve</code>；https 页面会被浏览器的本地网络策略拦截，请改用 <code>http://127.0.0.1:8899/partie4.html</code> 打开。</div>'
     +   '<div class="mstatus" id="aiStatus"></div>'
     + '</div>'
     + '<div class="mfoot"><button class="btn" id="aiTest">测试连接</button><button class="btn primary" id="aiSave">保存</button></div>'
@@ -1112,6 +1128,7 @@ function ensureAIModal(){
     const p = AI_PRESETS[b.dataset.p];
     d.querySelector('#aiBase').value = p.base;
     d.querySelector('#aiModel').value = p.model;
+    d.querySelector('#aiStatus').textContent = b.dataset.p === 'deepseek' ? '填上 DeepSeek 的 API Key 后点保存' : '';
   });
   d.querySelector('#aiSave').onclick = () => {
     aiCfg.base = d.querySelector('#aiBase').value.trim();
@@ -1141,7 +1158,10 @@ function openAISettings(){
   d.querySelector('#aiBase').value = aiCfg.base || '';
   d.querySelector('#aiModel').value = aiCfg.model || '';
   d.querySelector('#aiKey').value = aiCfg.key || '';
-  d.querySelector('#aiStatus').textContent = '';
+  const warn = (location.protocol === 'https:' && /127\.0\.0\.1|localhost/.test(aiCfg.base))
+    ? '⚠ 当前是 https 页面，连不上本机 Ollama。点下面「DeepSeek」预设填 Key，或用 http://127.0.0.1:8899/partie4.html 打开本页。'
+    : (aiCfg.key ? '' : '');
+  d.querySelector('#aiStatus').textContent = warn;
   d.classList.add('open');
 }
 
