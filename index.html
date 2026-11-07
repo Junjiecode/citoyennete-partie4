@@ -1056,7 +1056,7 @@ async function sendAI(){
   const tick = () => { chatEl.scrollTop = chatEl.scrollHeight; };
   try {
     const messages = [
-      { role:'system', content:'你是法国公民考试（Livret du citoyen 2026 · Partie 4：历史、地理与文化）的中文复习助手。用简体中文回答，条理清晰、要点化；关键的法语人名、事件、术语保留原文并附中文解释。只依据给出的资料回答；资料没覆盖就直说，并建议查阅哪一节。不要编造年份或人名。' },
+      { role:'system', content:'你是法国公民考试（Livret du citoyen 2026 · Partie 4：历史、地理与文化）的中文复习助手。用简体中文回答，条理清晰、要点化；关键的法语人名、事件、术语保留原文并附中文解释。只依据给出的资料回答。人名、时间、因果必须以资料为准：资料里没写的过程不要自行补充，宁可少答。资料没覆盖就直说，并指出应查阅哪一节。' },
       { role:'user', content: buildContext(text) + '\n\n【问题】' + text }
     ];
     await streamChat(messages, t => {
