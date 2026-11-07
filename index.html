@@ -130,7 +130,7 @@
   .empty { font-size: 12px; color: var(--muted); }
   /* AI 栏 */
   .aibar { flex: 0 0 auto; border-top: 1px solid var(--border); padding: 9px 13px; background: var(--bg); }
-  .chat { max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .chat { max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
   .msg { font-size: 12.5px; padding: 6px 10px; border-radius: 10px; max-width: 82%; }
   .msg.ai { background: var(--card); border: 1px solid var(--border); align-self: flex-start; color: var(--fg); }
   .msg.user { background: var(--accent); color: var(--accent-ink); align-self: flex-end; }
@@ -152,6 +152,45 @@
   .note-form { margin: 6px 0 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
   .note-form textarea { width: 100%; min-height: 56px; resize: vertical; border: 1px solid var(--border); border-radius: 8px; padding: 7px; font: inherit; font-size: 13px; color: var(--fg); background: transparent; }
   .note-form .nf-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  /* 划线颜色 */
+  mark.hl { color: #1a1a1a; }
+  mark.hl.y { background: #ffe08a; }
+  mark.hl.g { background: #b7e4a8; }
+  mark.hl.p { background: #f9c8dd; }
+  /* 划线工具条 */
+  #toolbar { position: fixed; display: none; background: var(--card); border: 1px solid var(--border); border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.18); z-index: 99; padding: 5px 7px; gap: 7px; align-items: center; }
+  #toolbar.open { display: flex; }
+  #toolbar.mobile { left: 50% !important; top: auto !important; bottom: 18px; transform: translateX(-50%); }
+  #toolbar .hlc { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(0,0,0,.12); cursor: pointer; padding: 0; }
+  #toolbar .hlc:active { transform: scale(.9); }
+  #toolbar .hlc.y { background: #ffe08a; }
+  #toolbar .hlc.g { background: #b7e4a8; }
+  #toolbar .hlc.p { background: #f9c8dd; }
+  /* 抽屉分页 */
+  .dtabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .dtabs button { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; }
+  .dtabs button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .note .body.hl-y, .note .body.hl-g, .note .body.hl-p { color: #1a1a1a; padding: 1px 4px; border-radius: 3px; display: inline-block; }
+  .note .body.hl-y { background: #ffe08a; }
+  .note .body.hl-g { background: #b7e4a8; }
+  .note .body.hl-p { background: #f9c8dd; }
+  /* AI 消息里的存为笔记 */
+  .msg .minibtn { display: block; margin-top: 6px; font-size: 11px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--accent); cursor: pointer; font-family: inherit; }
+  /* 设置弹窗 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 300; }
+  .modal.open { display: flex; }
+  .mbox { width: min(440px, 92vw); background: var(--bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .mhead { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; }
+  .mclose { border: none; background: none; color: var(--muted); font-size: 16px; cursor: pointer; }
+  .mbody { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .mbody label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  .mbody input { font: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--fg); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button { font-size: 11.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--fg); cursor: pointer; font-family: inherit; }
+  .mhint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .mhint code { background: var(--card); padding: 1px 4px; border-radius: 4px; }
+  .mstatus { font-size: 11.5px; color: var(--accent); min-height: 16px; }
+  .mfoot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); }
   @media (max-width: 760px) { .toc { display: none; } .drawer { width: 100%; } }
 </style>
 </head>
@@ -186,7 +225,7 @@
   </div>
 </div>
 
-<div id="toolbar"><button id="hlBtn">划线</button></div>
+<div id="toolbar" role="toolbar" aria-label="划线"><button class="hlc y" data-color="y" title="黄色划线" aria-label="黄色划线"></button><button class="hlc g" data-color="g" title="绿色划线" aria-label="绿色划线"></button><button class="hlc p" data-color="p" title="粉色划线" aria-label="粉色划线"></button></div>
 
 <div class="lightbox" id="lightbox">
   <button class="lb-close" id="lbClose">✕</button>
@@ -482,15 +521,57 @@ themeBtn.addEventListener('click', () => {
    渲染
    ══════════════════════════════════════════════════════════ */
 function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function applyMarks(html, anchor, searchQ){
-  state.highlights.filter(h => h.anchor === anchor).forEach(h => {
-    if (h.text) html = html.split(esc(h.text)).join('<mark class="hl" data-hl="'+h.id+'">'+esc(h.text)+'</mark>');
+/* ── 文本槽位渲染：划线按字符偏移保存，跨段落/重渲染都稳定 ── */
+const BLOCK_MAP = {};
+function renderRanges(raw, ranges){
+  if (!ranges.length) return esc(raw);
+  ranges.sort((a,b)=> a.s - b.s || b.e - a.e);
+  const merged = [];
+  for (const r0 of ranges){
+    let r = { s: r0.s, e: r0.e, cls: r0.cls, id: r0.id };
+    if (r.s < 0) r.s = 0;
+    if (r.e > raw.length) r.e = raw.length;
+    if (r.e <= r.s) continue;
+    const last = merged[merged.length-1];
+    if (last && r.s < last.e){
+      if (r.e > last.e) merged.push({ s:last.e, e:r.e, cls:r.cls, id:r.id });
+      const set = new Set((last.cls + ' ' + r.cls).split(/\s+/).filter(Boolean));
+      last.cls = [...set].join(' ');
+      if (!last.id && r.id) last.id = r.id;
+    } else merged.push(r);
+  }
+  let out = '', pos = 0;
+  for (const r of merged){
+    out += esc(raw.slice(pos, r.s));
+    out += '<mark class="'+r.cls+'"'+(r.id ? ' data-hl="'+r.id+'"' : '')+'>' + esc(raw.slice(r.s, r.e)) + '</mark>';
+    pos = r.e;
+  }
+  return out + esc(raw.slice(pos));
+}
+function annotate(raw, anchor, slotIdx, searchQ){
+  const ranges = [];
+  state.highlights.forEach(h => {
+    if (h.anchor !== anchor) return;
+    if (h.slot != null && h.slot !== slotIdx) return;
+    let s, e;
+    if (h.start != null && raw.slice(h.start, h.end) === h.text) { s = h.start; e = h.end; }
+    else {
+      const i = raw.indexOf(h.text);
+      if (i < 0) return;
+      s = i; e = i + h.text.length;
+      if (h.slot == null) { h.slot = slotIdx; h.start = s; h.end = e; }
+    }
+    ranges.push({ s: s, e: e, cls: 'hl ' + (h.color || 'y'), id: h.id });
   });
   if (searchQ) {
-    const q = esc(searchQ);
-    html = html.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'), '<mark class="search">$1</mark>');
+    const low = raw.toLowerCase(), q = searchQ.toLowerCase();
+    let i = low.indexOf(q);
+    while (i >= 0) { ranges.push({ s:i, e:i + q.length, cls:'search' }); i = low.indexOf(q, i + q.length); }
   }
-  return html;
+  return renderRanges(raw, ranges);
+}
+function slot(text, anchor, i, searchQ){
+  return '<span class="ts" data-anchor="'+anchor+'" data-slot="'+i+'">' + annotate(text, anchor, i, searchQ) + '</span>';
 }
 function blockHTML(b, anchor, searchQ){
   if (b.t === 'timeline') {
@@ -498,12 +579,26 @@ function blockHTML(b, anchor, searchQ){
     let note = b.note ? '<div class="tl-row"><span class="tl-year"></span><span class="tl-note">'+esc(b.note)+'</span></div>' : '';
     return { html:'<div class="timeline"><div class="tl-title">'+esc(b.title)+'</div>'+rows+note+'</div>', text: b.rows.map(r=>r.y+' '+r.l).join(' ') };
   }
-  if (b.t === 'period') return { html:'<div class="period"><div class="p-head"><span class="p-name">'+esc(b.name)+'</span><span class="p-dates">'+esc(b.dates)+'</span></div></div>', text: b.name+' '+b.dates };
-  if (b.t === 'key') return { html:'<div class="key"><div class="k-name">'+applyMarks(esc(b.name),anchor,searchQ)+'</div><div class="k-text">'+applyMarks(esc(b.text),anchor,searchQ)+'</div></div>', text: b.name+' '+b.text };
-  if (b.t === 'callout') return { html:'<div class="callout"><div class="c-title">'+esc(b.title)+'</div><p>'+applyMarks(esc(b.text),anchor,searchQ)+'</p></div>', text: b.title+' '+b.text };
-  if (b.t === 'ul') { const items = b.items.map(i=>'<li>'+applyMarks(esc(i),anchor,searchQ)+'</li>').join(''); return { html:'<ul>'+items+'</ul>', text: b.items.join(' ') }; }
-  if (b.t === 'subhead') return { html:'<div class="subhead">'+applyMarks(esc(b.text),anchor,searchQ)+'</div>', text: b.text };
-  return { html:'<p>'+applyMarks(esc(b.text),anchor,searchQ)+'</p>', text: b.text };
+  if (b.t === 'period') return { html:'<div class="period"><div class="p-head"><span class="p-name">'+slot(b.name,anchor,0,searchQ)+'</span><span class="p-dates">'+slot(b.dates,anchor,1,searchQ)+'</span></div></div>', text: b.name+' '+b.dates };
+  if (b.t === 'key') return { html:'<div class="key"><div class="k-name">'+slot(b.name,anchor,0,searchQ)+'</div><div class="k-text">'+slot(b.text,anchor,1,searchQ)+'</div></div>', text: b.name+' '+b.text };
+  if (b.t === 'callout') return { html:'<div class="callout"><div class="c-title">'+slot(b.title,anchor,0,searchQ)+'</div><p>'+slot(b.text,anchor,1,searchQ)+'</p></div>', text: b.title+' '+b.text };
+  if (b.t === 'ul') { const items = b.items.map((it,i)=>'<li>'+slot(it,anchor,i,searchQ)+'</li>').join(''); return { html:'<ul>'+items+'</ul>', text: b.items.join(' ') }; }
+  if (b.t === 'subhead') return { html:'<div class="subhead">'+slot(b.text,anchor,0,searchQ)+'</div>', text: b.text };
+  return { html:'<p>'+slot(b.text,anchor,0,searchQ)+'</p>', text: b.text };
+}
+/* 只重绘一个块，避免整页重排导致滚动位置丢失 */
+function repaint(anchor){
+  const el = document.querySelector('.block[data-anchor="'+anchor+'"]');
+  const b = BLOCK_MAP[anchor];
+  if (!el || !b) return;
+  const hasNote = state.notes.some(n => n.anchor === anchor);
+  const r = blockHTML(b, anchor, currentSearch);
+  el.innerHTML = r.html + '<button class="addnote' + (hasNote ? ' has' : '') + '" data-anchor="'+anchor+'">＋笔记</button>';
+}
+function repaintAll(){ Object.keys(BLOCK_MAP).forEach(repaint); }
+function jumpTo(anchor){
+  const el = document.querySelector('.block[data-anchor="'+anchor+'"]');
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 function renderPagesToggle(sub){
   if (!sub.pages || !sub.pages.length || typeof PAGES === 'undefined') return '';
@@ -514,6 +609,7 @@ function renderPagesToggle(sub){
 function renderContent(searchQ){
   const main = document.getElementById('main');
   const toc = document.getElementById('toc');
+  const _keepScroll = main.scrollTop;
   main.innerHTML=''; toc.innerHTML='';
   let totalMatches = 0;
   // 全书目录页
@@ -547,6 +643,7 @@ function renderContent(searchQ){
         el.className = 'block' + (searchQ && !r.text.toLowerCase().includes(searchQ.toLowerCase()) ? ' dim' : '');
         el.dataset.anchor = anchor;
         el.innerHTML = r.html + '<button class="addnote'+(hasNote?' has':'')+'" data-anchor="'+anchor+'">＋笔记</button>';
+        BLOCK_MAP[anchor] = b;
         subDiv.appendChild(el);
         if (searchQ && r.text.toLowerCase().includes(searchQ.toLowerCase())) totalMatches++;
       });
@@ -557,6 +654,7 @@ function renderContent(searchQ){
   document.getElementById('count').textContent = searchQ ? (totalMatches + ' 处匹配') : '';
   bindPagesToggles();
   bindGalleryImages();
+  main.scrollTop = _keepScroll;
 }
 function scrollToEl(id){ const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior:'smooth', block:'start' }); }
 
@@ -621,71 +719,412 @@ document.addEventListener('click', (e) => {
 });
 
 /* ══════════════════════════════════════════════════════════
-   划线
+   划线 v2（鼠标 + 触屏；偏移量存储；三种颜色）
    ══════════════════════════════════════════════════════════ */
 const toolbar = document.getElementById('toolbar');
-let currentRange = null;
-function hideToolbar(){ toolbar.style.display='none'; }
-document.addEventListener('mouseup', (e) => {
-  setTimeout(() => {
-    const sel = window.getSelection();
-    const main = document.getElementById('main');
-    if (sel && !sel.isCollapsed && main.contains(sel.anchorNode)) {
-      const blockEl = sel.anchorNode.parentElement ? sel.anchorNode.parentElement.closest('.block') : null;
-      if (blockEl) {
-        const r = sel.getRangeAt(0).getBoundingClientRect();
-        toolbar.style.display='block';
-        toolbar.style.left = Math.max(8, r.left + r.width/2 - 30) + 'px';
-        toolbar.style.top = Math.max(8, r.top - 40) + 'px';
-        currentRange = { anchor: blockEl.dataset.anchor, text: sel.toString() };
-      }
-    } else if (!toolbar.contains(e.target)) { hideToolbar(); }
-  }, 10);
-});
-document.getElementById('hlBtn').addEventListener('click', () => {
-  if (!currentRange || !currentRange.text.trim()) { hideToolbar(); return; }
-  const { anchor, text } = currentRange;
-  if (!state.highlights.find(h => h.anchor===anchor && h.text===text)) {
-    state.highlights.push({ id:'h'+Date.now(), anchor, text }); saveState(); renderContent(currentSearch);
+let pendingSel = null;
+
+function offsetWithin(el, node, off){
+  try {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.setEnd(node, off);
+    return r.toString().length;
+  } catch(e){ return el.textContent.length; }
+}
+function currentSelectionRanges(){
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return [];
+  if (!String(sel).trim()) return [];
+  let range;
+  try { range = sel.getRangeAt(0); } catch(e){ return []; }
+  const out = [];
+  document.querySelectorAll('#main .ts').forEach(el => {
+    if (!range.intersectsNode(el)) return;
+    const len = el.textContent.length;
+    let s = 0, e = len;
+    if (el.contains(range.startContainer)) s = offsetWithin(el, range.startContainer, range.startOffset);
+    if (el.contains(range.endContainer)) e = offsetWithin(el, range.endContainer, range.endOffset);
+    if (e > s) out.push({ anchor: el.dataset.anchor, slot: +el.dataset.slot, start: s, end: e, text: el.textContent.slice(s, e) });
+  });
+  return out;
+}
+function showToolbar(x, y){
+  toolbar.classList.add('open');
+  const w = toolbar.offsetWidth || 170;
+  toolbar.style.left = Math.max(8, Math.min(x - w/2, window.innerWidth - w - 10)) + 'px';
+  toolbar.style.top = Math.max(8, y - 52) + 'px';
+}
+function hideToolbar(){ toolbar.classList.remove('open'); }
+
+function maybeShowToolbar(){
+  const rs = currentSelectionRanges();
+  if (!rs.length) { pendingSel = null; hideToolbar(); return; }
+  pendingSel = rs;
+  if (window.innerWidth < 760 || ('ontouchstart' in window && window.innerWidth < 1024)) {
+    toolbar.classList.add('mobile');
+    toolbar.style.left = '';
+    toolbar.style.top = '';
+  } else {
+    toolbar.classList.remove('mobile');
+    const r = window.getSelection().getRangeAt(0).getBoundingClientRect();
+    showToolbar(r.left + r.width/2, r.top);
   }
-  window.getSelection().removeAllRanges(); hideToolbar();
+}
+document.addEventListener('selectionchange', () => {
+  clearTimeout(maybeShowToolbar._t);
+  maybeShowToolbar._t = setTimeout(() => { if (!toolbar.contains(document.activeElement)) maybeShowToolbar(); }, 220);
 });
+document.addEventListener('mouseup', e => { if (!toolbar.contains(e.target)) setTimeout(maybeShowToolbar, 10); });
+document.addEventListener('touchend', e => { if (!toolbar.contains(e.target)) setTimeout(maybeShowToolbar, 200); });
 document.addEventListener('mousedown', e => { if (!toolbar.contains(e.target)) hideToolbar(); });
+
+function addHighlight(color){
+  if (!pendingSel || !pendingSel.length) { hideToolbar(); return; }
+  pendingSel.forEach(r => {
+    if (!r.text.trim()) return;
+    const dup = state.highlights.some(h => h.anchor === r.anchor && h.slot === r.slot && h.start === r.start && h.end === r.end);
+    if (!dup) state.highlights.push({
+      id: 'h' + Date.now() + Math.random().toString(36).slice(2, 6),
+      anchor: r.anchor, slot: r.slot, start: r.start, end: r.end, text: r.text, color: color
+    });
+  });
+  saveState();
+  [...new Set(pendingSel.map(r => r.anchor))].forEach(repaint);
+  renderNotes();
+  const s = window.getSelection(); if (s) s.removeAllRanges();
+  hideToolbar(); pendingSel = null;
+}
+toolbar.querySelectorAll('[data-color]').forEach(b => b.addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation(); addHighlight(b.dataset.color);
+}));
+
 document.addEventListener('click', (e) => {
-  if (e.target.tagName === 'MARK' && e.target.classList.contains('hl')) {
-    const id = e.target.dataset.hl;
-    state.highlights = state.highlights.filter(h => h.id !== id);
-    saveState(); renderContent(currentSearch);
+  const m = e.target.closest ? e.target.closest('mark.hl') : null;
+  if (m && m.dataset.hl) {
+    e.stopPropagation();
+    state.highlights = state.highlights.filter(h => h.id !== m.dataset.hl);
+    saveState();
+    const blk = m.closest('.block');
+    if (blk) repaint(blk.dataset.anchor);
+    renderNotes();
   }
 });
 
 /* ══════════════════════════════════════════════════════════
-   AI（Hermes 联动）
+   抽屉：笔记 / 划线
    ══════════════════════════════════════════════════════════ */
+let drawerTab = 'notes';
+function noteLabel(a){
+  const b = BLOCK_MAP[a];
+  const t = b ? String(b.text || '').replace(/\s+/g, ' ').trim() : '';
+  return anchorLabel(a) + (t ? ' · ' + t.slice(0, 16) + (t.length > 16 ? '…' : '') : '');
+}
+function hlColorName(c){ return c === 'g' ? '绿' : c === 'p' ? '粉' : '黄'; }
+function renderNotes(){
+  const body = document.getElementById('dBody');
+  const cnt = document.getElementById('noteCount');
+  if (cnt) cnt.textContent = state.notes.length;
+  let html = '<div class="dtabs">'
+    + '<button data-tab="notes" class="'+(drawerTab==='notes'?'on':'')+'">笔记 '+state.notes.length+'</button>'
+    + '<button data-tab="hl" class="'+(drawerTab==='hl'?'on':'')+'">划线 '+state.highlights.length+'</button>'
+    + '</div>';
+  if (drawerTab === 'notes') {
+    if (!state.notes.length) html += '<div class="empty">还没有笔记。点正文里的「＋笔记」，或问完 AI 后点「存为笔记」。</div>';
+    state.notes.slice().reverse().forEach(n => {
+      const ai = n.author === 'AI';
+      html += '<div class="note" data-jump="'+n.anchor+'">'
+        + '<div class="meta"><span class="anchor">'+esc(noteLabel(n.anchor))+'</span><span class="author'+(ai?' ai':'')+'">'+esc(n.author)+'</span></div>'
+        + '<button class="del" data-id="'+n.id+'">删除</button><p class="body">'+esc(n.text)+'</p></div>';
+    });
+  } else {
+    if (!state.highlights.length) html += '<div class="empty">还没有划线。选中正文，再点浮出来的「划线」。</div>';
+    state.highlights.slice().reverse().forEach(h => {
+      html += '<div class="note" data-jump="'+h.anchor+'">'
+        + '<div class="meta"><span class="anchor">'+esc(noteLabel(h.anchor))+'</span><span class="author">'+hlColorName(h.color)+'</span></div>'
+        + '<button class="del" data-hl="'+h.id+'">删除</button><p class="body hl-'+esc(h.color||'y')+'">'+esc(h.text)+'</p></div>';
+    });
+  }
+  body.innerHTML = html;
+  body.querySelectorAll('.dtabs button').forEach(b => b.onclick = () => { drawerTab = b.dataset.tab; renderNotes(); });
+  body.querySelectorAll('.note .del').forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    if (b.dataset.hl) state.highlights = state.highlights.filter(x => x.id !== b.dataset.hl);
+    else state.notes = state.notes.filter(x => x.id !== b.dataset.id);
+    saveState(); renderNotes(); repaintAll();
+  });
+  body.querySelectorAll('.note').forEach(d => d.onclick = () => { if (d.dataset.jump) jumpTo(d.dataset.jump); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   AI（OpenAI 兼容接口；默认本地 Ollama，流式输出）
+   ══════════════════════════════════════════════════════════ */
+const AI_KEY = 'ai_p4_cfg';
+const AI_PRESETS = {
+  ollama:    { base:'http://127.0.0.1:11434/v1', model:'gpt-oss:20b' },
+  lmstudio:  { base:'http://127.0.0.1:1234/v1',  model:'local-model' },
+  deepseek:  { base:'https://api.deepseek.com/v1', model:'deepseek-chat' },
+  openrouter:{ base:'https://openrouter.ai/api/v1', model:'qwen/qwen-2.5-7b-instruct' }
+};
+let aiCfg = { base: AI_PRESETS.ollama.base, model: AI_PRESETS.ollama.model, key: '' };
+try { Object.assign(aiCfg, JSON.parse(localStorage.getItem(AI_KEY) || '{}')); } catch(e){}
+function saveAICfg(){ localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }
+
+const STOP = new Set(['der','die','das','les','des','une','pour','avec','dans','sur','que','qui','est','sont','aux','par','plus','pas','the','and','for','what','when','who','how']);
+function outlineText(){
+  return CONTENT.map(ch => '· ' + ch.title + '：' + ch.subs.map(s => s.title).join(' / ')).join('\n');
+}
+function visibleAnchor(){
+  const main = document.getElementById('main');
+  if (!main) return null;
+  const mid = main.getBoundingClientRect().top + 140;
+  let best = null;
+  document.querySelectorAll('#main .block').forEach(el => {
+    if (el.getBoundingClientRect().top <= mid) best = el.dataset.anchor;
+  });
+  return best;
+}
+function buildContext(q){
+  const terms = (q.toLowerCase().match(/[a-zà-öø-ÿ0-9]{3,}/g) || []).filter(w => !STOP.has(w));
+  const keys = Object.keys(BLOCK_MAP);
+  let picks = [];
+  if (terms.length) {
+    picks = keys.map(a => {
+      const t = (BLOCK_MAP[a].text || '').toLowerCase();
+      let s = 0;
+      terms.forEach(w => { let i = t.indexOf(w); while (i >= 0) { s++; i = t.indexOf(w, i + w.length); } });
+      return { a: a, s: s };
+    }).filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 8);
+  }
+  if (!picks.length) {
+    const cur = visibleAnchor();
+    const i = cur ? keys.indexOf(cur) : 0;
+    picks = keys.slice(Math.max(0, i - 3), i + 5).map(a => ({ a: a, s: 1 }));
+  }
+  const ctx = picks.map(x => '〔' + anchorLabel(x.a) + '〕' + BLOCK_MAP[x.a].text).join('\n---\n');
+  return '【全书结构】\n' + outlineText() + '\n\n【相关原文】\n' + (ctx || '（无）');
+}
+let lastCtxAnchor = null;
+
 function renderChat(){
-  const el = document.getElementById('chat'); el.innerHTML='';
-  state.chat.forEach(m => { const d = document.createElement('div'); d.className='msg '+m.role; d.textContent=m.text; el.appendChild(d); });
+  const el = document.getElementById('chat');
+  el.innerHTML = '';
+  state.chat.forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'msg ' + m.role;
+    d.textContent = m.text;
+    if (m.role === 'ai' && !m.sys && m.text && m.text !== '…') {
+      const b = document.createElement('button');
+      b.className = 'minibtn';
+      b.textContent = '存为笔记';
+      b.onclick = (e) => { e.stopPropagation(); addAINote(m); };
+      d.appendChild(b);
+    }
+    el.appendChild(d);
+  });
   el.scrollTop = el.scrollHeight;
 }
-function sendAI(){
-  const input = document.getElementById('aiInput'); const text = input.value.trim(); if (!text) return;
-  state.chat.push({ id:'u'+Date.now(), role:'user', text }); saveState(); renderChat(); input.value='';
-  if (window.hermes && window.hermes.send) window.hermes.send('【复习工作台 · Partie 4】'+text);
-  else { state.chat.push({ id:'err'+Date.now(), role:'ai', text:'（Hermes 未连接）' }); saveState(); renderChat(); }
+function addAINote(m){
+  const anchor = m.anchor || lastCtxAnchor || Object.keys(BLOCK_MAP)[0];
+  state.notes.push({ id:'n'+Date.now(), anchor: anchor, text: m.text, author:'AI' });
+  saveState(); renderNotes();
+  drawerTab = 'notes';
+  const d = document.getElementById('drawer'); if (d) d.classList.add('open');
+  const ta = document.getElementById('aiInput'); if (ta) ta.value = '';
 }
-document.getElementById('send').addEventListener('click', sendAI);
-document.getElementById('aiInput').addEventListener('keydown', e => { if (e.key==='Enter') sendAI(); });
+function addNoteByName(name, text){
+  const k = name.trim().toLowerCase();
+  if (!k) return null;
+  let found = null;
+  Object.keys(BLOCK_MAP).forEach(a => {
+    if (found) return;
+    const b = BLOCK_MAP[a], t = (b.text || '').toLowerCase();
+    if (t.indexOf(k) >= 0 || anchorLabel(a).toLowerCase().indexOf(k) >= 0) found = a;
+  });
+  if (!found) return null;
+  state.notes.push({ id:'n'+Date.now(), anchor: found, text: text.trim(), author:'你' });
+  saveState(); renderNotes();
+  return { anchor: found };
+}
+async function streamChat(messages, onDelta){
+  const url = aiCfg.base.replace(/\/+$/, '') + '/chat/completions';
+  const headers = { 'Content-Type': 'application/json' };
+  if (aiCfg.key) headers['Authorization'] = 'Bearer ' + aiCfg.key;
+  const res = await fetch(url, {
+    method: 'POST', headers: headers,
+    body: JSON.stringify({ model: aiCfg.model, messages: messages, stream: true, temperature: 0.3 })
+  });
+  if (!res.ok) {
+    let t = ''; try { t = (await res.text()).slice(0, 200); } catch(e){}
+    throw new Error('HTTP ' + res.status + ' ' + t);
+  }
+  if (!res.body) {
+    const j = await res.json();
+    onDelta(j.choices[0].message.content || '');
+    return;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      const d = line.slice(5).trim();
+      if (d === '[DONE]') return;
+      try {
+        const j = JSON.parse(d);
+        const t = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+        if (t) onDelta(t);
+      } catch(e){}
+    }
+  }
+}
+let aiBusy = false;
+async function sendAI(){
+  if (aiBusy) return;
+  const input = document.getElementById('aiInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
 
-/* 搜索 & 抽屉 */
+  const localNote = text.match(/^(?:给|帮我把|把)?\s*[《〈「"]?(.+?)[》〉」"]?\s*(?:加|写|记|做个?)(?:一个|个)?笔记\s*[:：]\s*([\s\S]+)$/);
+  if (localNote) {
+    const r = addNoteByName(localNote[1], localNote[2]);
+    if (r) {
+      state.chat.push({ id:'u'+Date.now(), role:'user', text: text });
+      state.chat.push({ id:'a'+Date.now(), role:'ai', sys:true, text:'已记到「' + noteLabel(r.anchor) + '」。' });
+      saveState(); renderChat(); return;
+    }
+  }
+
+  state.chat.push({ id:'u'+Date.now(), role:'user', text: text });
+  const msg = { id:'a'+Date.now(), role:'ai', text:'…', anchor: visibleAnchor() };
+  state.chat.push(msg);
+  saveState(); renderChat();
+
+  if (!aiCfg.base || !aiCfg.model) {
+    msg.text = '还没配置 AI 接口。点右上角 ⚙ 填入接口地址和模型。';
+    saveState(); renderChat(); return;
+  }
+
+  aiBusy = true;
+  msg.text = '';
+  const chatEl = document.getElementById('chat');
+  const tick = () => { chatEl.scrollTop = chatEl.scrollHeight; };
+  try {
+    const messages = [
+      { role:'system', content:'你是法国公民考试（Livret du citoyen 2026 · Partie 4：历史、地理与文化）的中文复习助手。用简体中文回答，条理清晰、要点化；关键的法语人名、事件、术语保留原文并附中文解释。只依据给出的资料回答；资料没覆盖就直说，并建议查阅哪一节。不要编造年份或人名。' },
+      { role:'user', content: buildContext(text) + '\n\n【问题】' + text }
+    ];
+    await streamChat(messages, t => {
+      msg.text += t;
+      const last = chatEl.lastElementChild;
+      if (last) { last.textContent = msg.text; tick(); }
+    });
+    if (!msg.text) msg.text = '（模型没有返回内容）';
+  } catch (err) {
+    msg.text = '❌ ' + err.message + '\n\n检查 ⚙ 里的接口地址、模型名；本地 Ollama 需要允许跨域（OLLAMA_ORIGINS）。';
+  }
+  aiBusy = false;
+  saveState(); renderChat();
+}
+
+/* ── AI 设置弹窗 ── */
+function ensureAIModal(){
+  if (document.getElementById('aiModal')) return;
+  const d = document.createElement('div');
+  d.id = 'aiModal';
+  d.className = 'modal';
+  d.innerHTML = '<div class="mbox">'
+    + '<div class="mhead">AI 接口设置<button class="mclose" id="aiClose">✕</button></div>'
+    + '<div class="mbody">'
+    +   '<label>接口地址（OpenAI 兼容）<input id="aiBase" placeholder="http://127.0.0.1:11434/v1"></label>'
+    +   '<label>模型名<input id="aiModel" placeholder="gpt-oss:20b"></label>'
+    +   '<label>API Key（本地 Ollama 留空）<input id="aiKey" type="password" placeholder="sk-..."></label>'
+    +   '<div class="presets">'
+    +     '<button data-p="ollama">本地 Ollama</button><button data-p="lmstudio">LM Studio</button>'
+    +     '<button data-p="deepseek">DeepSeek</button><button data-p="openrouter">OpenRouter</button>'
+    +   '</div>'
+    +   '<div class="mhint">本地模型：先用 <code>ollama serve</code> 启动，并设置 <code>OLLAMA_ORIGINS=*</code> 才能从网页调用。</div>'
+    +   '<div class="mstatus" id="aiStatus"></div>'
+    + '</div>'
+    + '<div class="mfoot"><button class="btn" id="aiTest">测试连接</button><button class="btn primary" id="aiSave">保存</button></div>'
+    + '</div>';
+  document.body.appendChild(d);
+  d.addEventListener('click', e => { if (e.target === d) d.classList.remove('open'); });
+  d.querySelector('#aiClose').onclick = () => d.classList.remove('open');
+  d.querySelectorAll('.presets button').forEach(b => b.onclick = () => {
+    const p = AI_PRESETS[b.dataset.p];
+    d.querySelector('#aiBase').value = p.base;
+    d.querySelector('#aiModel').value = p.model;
+  });
+  d.querySelector('#aiSave').onclick = () => {
+    aiCfg.base = d.querySelector('#aiBase').value.trim();
+    aiCfg.model = d.querySelector('#aiModel').value.trim();
+    aiCfg.key = d.querySelector('#aiKey').value.trim();
+    saveAICfg();
+    d.querySelector('#aiStatus').textContent = '已保存 ✓';
+  };
+  d.querySelector('#aiTest').onclick = async () => {
+    const st = d.querySelector('#aiStatus');
+    const base = d.querySelector('#aiBase').value.trim().replace(/\/+$/, '');
+    const key = d.querySelector('#aiKey').value.trim();
+    st.textContent = '测试中…';
+    try {
+      const h = key ? { 'Authorization': 'Bearer ' + key } : {};
+      const r = await fetch(base + '/models', { headers: h });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const names = (j.data || []).map(x => x.id).slice(0, 6);
+      st.textContent = '连通 ✓ ' + (names.length ? '可用模型：' + names.join(', ') : '');
+    } catch (e) { st.textContent = '连不上：' + e.message; }
+  };
+}
+function openAISettings(){
+  ensureAIModal();
+  const d = document.getElementById('aiModal');
+  d.querySelector('#aiBase').value = aiCfg.base || '';
+  d.querySelector('#aiModel').value = aiCfg.model || '';
+  d.querySelector('#aiKey').value = aiCfg.key || '';
+  d.querySelector('#aiStatus').textContent = '';
+  d.classList.add('open');
+}
+
+/* ══════════════════════════════════════════════════════════
+   搜索 / 抽屉 / 初始化
+   ══════════════════════════════════════════════════════════ */
 let currentSearch = '';
-document.getElementById('search').addEventListener('input', e => { currentSearch = e.target.value.trim(); renderContent(currentSearch); });
-document.getElementById('notesToggle').addEventListener('click', () => document.getElementById('drawer').classList.toggle('open'));
+document.getElementById('search').addEventListener('input', e => {
+  currentSearch = e.target.value.trim();
+  renderContent(currentSearch);
+});
+document.getElementById('notesToggle').addEventListener('click', () => {
+  document.getElementById('drawer').classList.toggle('open');
+  renderNotes();
+});
 document.getElementById('drawerClose').addEventListener('click', () => document.getElementById('drawer').classList.remove('open'));
+document.getElementById('send').addEventListener('click', sendAI);
+document.getElementById('aiInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendAI(); } });
 
-/* ══════════════════════════════════════════════════════════ */
+(function initAIButton(){
+  const bar = document.querySelector('.topbar');
+  if (!bar) return;
+  const b = document.createElement('button');
+  b.className = 'iconbtn'; b.id = 'aiCfgBtn'; b.title = 'AI 接口设置'; b.textContent = '⚙';
+  b.onclick = openAISettings;
+  bar.insertBefore(b, bar.querySelector('#notesToggle'));
+})();
+
 renderContent('');
 renderNotes();
 renderChat();
+
 </script>
 </body>
 </html>
