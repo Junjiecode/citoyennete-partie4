@@ -170,6 +170,7 @@
   .dtabs { display: flex; gap: 6px; margin-bottom: 10px; }
   .dtabs button { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; }
   .dtabs button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .note .q { font-size: 11.5px; color: var(--muted); margin: 0 0 4px; }
   .note .body.hl-y, .note .body.hl-g, .note .body.hl-p { color: #1a1a1a; padding: 1px 4px; border-radius: 3px; display: inline-block; }
   .note .body.hl-y { background: #ffe08a; }
   .note .body.hl-g { background: #b7e4a8; }
@@ -835,7 +836,7 @@ function renderNotes(){
       const ai = n.author === 'AI';
       html += '<div class="note" data-jump="'+n.anchor+'">'
         + '<div class="meta"><span class="anchor">'+esc(noteLabel(n.anchor))+'</span><span class="author'+(ai?' ai':'')+'">'+esc(n.author)+'</span></div>'
-        + '<button class="del" data-id="'+n.id+'">删除</button><p class="body">'+esc(n.text)+'</p></div>';
+        + '<button class="del" data-id="'+n.id+'">删除</button>' + (n.q ? '<p class="q">问：'+esc(n.q)+'</p>' : '') + '<p class="body">'+esc(n.text)+'</p></div>';
     });
   } else {
     if (!state.highlights.length) html += '<div class="empty">还没有划线。选中正文，再点浮出来的「划线」。</div>';
@@ -921,6 +922,17 @@ function fullText(){
   });
   return parts.join('\n');
 }
+function bestAnchorFor(q){
+  const terms = queryTerms(q);
+  let best = null, bs = 0;
+  Object.keys(BLOCK_MAP).forEach(a => {
+    const t = (BLOCK_MAP[a].text || '').toLowerCase();
+    let s = 0;
+    terms.forEach(w => { let i = t.indexOf(w); while (i >= 0) { s++; i = t.indexOf(w, i + w.length); } });
+    if (s > bs) { bs = s; best = a; }
+  });
+  return best || visibleAnchor();
+}
 function buildContext(q){
   const terms = queryTerms(q);
   const keys = Object.keys(BLOCK_MAP);
@@ -963,7 +975,7 @@ function renderChat(){
 }
 function addAINote(m){
   const anchor = m.anchor || lastCtxAnchor || Object.keys(BLOCK_MAP)[0];
-  state.notes.push({ id:'n'+Date.now(), anchor: anchor, text: m.text, author:'AI' });
+  state.notes.push({ id:'n'+Date.now(), anchor: anchor, text: m.text, author:'AI', q: m.q || '' });
   saveState(); renderNotes();
   drawerTab = 'notes';
   const d = document.getElementById('drawer'); if (d) d.classList.add('open');
@@ -1041,7 +1053,7 @@ async function sendAI(){
   }
 
   state.chat.push({ id:'u'+Date.now(), role:'user', text: text });
-  const msg = { id:'a'+Date.now(), role:'ai', text:'…', anchor: visibleAnchor() };
+  const msg = { id:'a'+Date.now(), role:'ai', text:'…', anchor: bestAnchorFor(text), q: text };
   state.chat.push(msg);
   saveState(); renderChat();
 
