@@ -884,8 +884,45 @@ function visibleAnchor(){
   });
   return best;
 }
+/* 中文提问 → 法语关键词，否则检索完全落空 */
+const ZH2FR = {
+  '帝国':'empire','革命':'révolution','战争':'guerre','国王':'roi','国王':'roi','王':'roi','共和国':'république',
+  '王朝':'dynastie','宗教':'religion','教会':'église','政教分离':'laïcité','世俗':'laïcité','奴隶':'esclavage',
+  '殖民地':'colonisation','阿尔及利亚':'algérie','欧盟':'union européenne','欧洲':'europe','人口':'population',
+  '城市':'ville','山':'montagne','海':'mer','河':'fleuve','气候':'climat','农业':'agriculture','经济':'économie',
+  '旅游':'tourisme','博物馆':'musée','卢浮宫':'louvre','画家':'peintre','画':'peinture','音乐':'musique',
+  '文学':'littérature','作家':'écrivain','语言':'langue','法语':'français','节日':'fête','体育':'sport',
+  '奥运':'jeux olympiques','美食':'gastronomie','葡萄酒':'vin','建筑':'architecture','城堡':'château',
+  '教堂':'cathédrale','一战':'première guerre','二战':'seconde guerre','抵抗':'résistance','戴高乐':'gaulle',
+  '拿破仑':'napoléon','路易':'louis','宪法':'constitution','总统':'président','选举':'élection','人权':'droits',
+  '启蒙':'lumières','文艺复兴':'renaissance','五月':'mai 1968','移民':'immigration','学校':'école',
+  '医疗':'santé','社保':'sécurité sociale','税':'impôt','军队':'armée','国防':'défense','言论':'presse',
+  '协会':'association','工会':'syndicat','罢工':'grève','女权':'femmes','教育':'éducation','大学':'université',
+  '科学':'science','居里':'curie','巴斯德':'pasteur','雨果':'hugo','莫里哀':'molière','伏尔泰':'voltaire'
+};
+function queryTerms(q){
+  const set = new Set((q.toLowerCase().match(/[a-zà-öø-ÿ0-9]{3,}/g) || []).filter(w => !STOP.has(w)));
+  Object.keys(ZH2FR).forEach(k => {
+    if (q.indexOf(k) >= 0) ZH2FR[k].split('|').forEach(w => set.add(w));
+  });
+  return [...set];
+}
+function fullText(){
+  const parts = [];
+  CONTENT.forEach(ch => {
+    parts.push('# ' + ch.title);
+    ch.subs.forEach(sub => {
+      parts.push('## ' + sub.title);
+      sub.blocks.forEach((b, i) => {
+        const t = BLOCK_MAP[sub.id + '-b' + i];
+        if (t && t.text) parts.push(t.text);
+      });
+    });
+  });
+  return parts.join('\n');
+}
 function buildContext(q){
-  const terms = (q.toLowerCase().match(/[a-zà-öø-ÿ0-9]{3,}/g) || []).filter(w => !STOP.has(w));
+  const terms = queryTerms(q);
   const keys = Object.keys(BLOCK_MAP);
   let picks = [];
   if (terms.length) {
@@ -894,15 +931,15 @@ function buildContext(q){
       let s = 0;
       terms.forEach(w => { let i = t.indexOf(w); while (i >= 0) { s++; i = t.indexOf(w, i + w.length); } });
       return { a: a, s: s };
-    }).filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 8);
+    }).filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 10);
   }
-  if (!picks.length) {
-    const cur = visibleAnchor();
-    const i = cur ? keys.indexOf(cur) : 0;
-    picks = keys.slice(Math.max(0, i - 3), i + 5).map(a => ({ a: a, s: 1 }));
+  if (picks.length >= 2) {
+    const ctx = picks.map(x => '〔' + anchorLabel(x.a) + '〕' + BLOCK_MAP[x.a].text).join('\n---\n');
+    return '【全书结构】\n' + outlineText() + '\n\n【相关原文】\n' + ctx;
   }
-  const ctx = picks.map(x => '〔' + anchorLabel(x.a) + '〕' + BLOCK_MAP[x.a].text).join('\n---\n');
-  return '【全书结构】\n' + outlineText() + '\n\n【相关原文】\n' + (ctx || '（无）');
+  /* 检索不到就直接给全文（Partie 4 约 3.4 万字符，本地模型足以吃下） */
+  const all = fullText();
+  return '【全书结构】\n' + outlineText() + '\n\n【全文】\n' + all;
 }
 let lastCtxAnchor = null;
 
@@ -1029,7 +1066,7 @@ async function sendAI(){
     });
     if (!msg.text) msg.text = '（模型没有返回内容）';
   } catch (err) {
-    msg.text = '❌ ' + err.message + '\n\n检查 ⚙ 里的接口地址、模型名；本地 Ollama 需要允许跨域（OLLAMA_ORIGINS）。';
+    msg.text = '❌ 连不上 AI：' + err.message + '\n\n① 终端确认 Ollama 在跑：ollama serve\n② 从 https 页面调用本机 127.0.0.1 会被浏览器的「本地网络访问」策略拦掉 —— 用 http://127.0.0.1:8899/partie4.html 打开本页即可\n③ 点 ⚙ →「测试连接」看具体报错';
   }
   aiBusy = false;
   saveState(); renderChat();
@@ -1100,9 +1137,11 @@ function openAISettings(){
    搜索 / 抽屉 / 初始化
    ══════════════════════════════════════════════════════════ */
 let currentSearch = '';
+let searchTimer = null;
 document.getElementById('search').addEventListener('input', e => {
   currentSearch = e.target.value.trim();
-  renderContent(currentSearch);
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => renderContent(currentSearch), 200);
 });
 document.getElementById('notesToggle').addEventListener('click', () => {
   document.getElementById('drawer').classList.toggle('open');
